@@ -1,0 +1,37 @@
+name: Energy-Automate
+
+on:
+   push:
+     branches:
+       - main
+   workflow_dispatch:    
+
+jobs: 
+     generate-energy-data:
+       runs-on: ubuntu-latest
+
+       steps:
+         - name: Checkout repository
+           uses: actions/checkout@v4
+
+         - name: Generate energy data
+           run: |
+             mkdir -p data
+
+             echo "Date,Irradiance,PV_Output,Temperature" > data/energy_data.csv
+             echo "2026-09-01,820,165.4,31.2" >> data/energy_data.csv
+             echo "2026-09-02,760,151.8,30.5" >> data/energy_data.csv
+             echo "2026-09-03,910,184.6,32.1" >> data/energy_data.csv
+             echo "2026-09-04,680,132.7,29.8" >> data/energy_data.csv
+             echo "2026-09-05,850,171.3,31.6" >> data/energy_data.csv
+
+         - name: Display generated data
+           run: |
+             cat data/energy_data.csv
+             
+         - name: Upload energy data
+           uses: actions/upload-artifact@v4
+           with:
+             name: energy-data
+             path: data/energy_data.csv
+
