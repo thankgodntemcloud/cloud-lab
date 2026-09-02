@@ -4,9 +4,9 @@ on:
    push:
      branches:
        - main
-   workflow_dispatch:    
+   workflow_dispatch:
 
-jobs: 
+jobs:
      generate-energy-data:
        runs-on: ubuntu-latest
 
@@ -35,7 +35,7 @@ jobs:
              name: energy-data
              path: data/energy_data.csv
 
-     
+
      validate-pv-data:
        runs-on: ubuntu-latest
 
@@ -75,7 +75,7 @@ jobs:
            run: |
              cat data/energy_data.csv
 
-  
+
      validate-weather-data:
        runs-on: ubuntu-latest
 
@@ -154,4 +154,48 @@ jobs:
 
          - name: Display performance results
            run: |
-             cat data/performance.csv        
+             cat data/performance.csv
+
+         - name: Upload performance data
+           uses: actions/upload-artifact@v4
+           with:
+             name: performance-data
+             path: data/performance.csv
+
+
+     detect-anomalies:
+       runs-on: ubuntu-latest
+
+       needs: calculate-performance
+
+       steps:
+         - name: Checkout repository
+           uses: actions/checkout@v4
+
+         - name: Download performance data
+           uses: actions/download-artifact@v4
+           with:
+             name: performance-data
+             path: data
+
+         - name: Detect PV anomalies
+           run: |
+             echo "Detecting PV performance anomalies..."
+
+             awk -F',' 'NR == 1 {
+               print "Date,PV_Performance,Status"
+               next
+             }
+             {
+               if ($2 < 0.198) {
+                 printf "%s,%s,ANOMALY\n", $1, $2
+               } else {
+                 printf "%s,%s,NORMAL\n", $1, $2
+               }
+             }' data/performance.csv > data/anomalies.csv
+
+             echo "Anomaly detection completed."
+
+         - name: Display anomaly results
+           run: |
+             cat data/anomalies.csv
