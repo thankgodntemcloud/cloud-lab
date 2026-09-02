@@ -28,10 +28,48 @@ jobs:
          - name: Display generated data
            run: |
              cat data/energy_data.csv
-             
+
          - name: Upload energy data
            uses: actions/upload-artifact@v4
            with:
              name: energy-data
              path: data/energy_data.csv
 
+validate-pv-data:
+  runs-on: ubuntu-latest
+
+  needs: generate-energy-data
+
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Download energy data
+      uses: actions/download-artifact@v4
+      with:
+        name: energy-data
+        path: data
+
+    - name: Validate PV data
+      run: |
+        echo "Validating PV generation data..."
+
+        if [ ! -f data/energy_data.csv ]; then
+          echo "ERROR: energy_data.csv not found"
+          exit 1
+        fi
+
+        echo "PV data file found."
+
+        awk -F',' 'NR > 1 {
+          if ($3 == "" || $3 !~ /^[0-9]+(\.[0-9]+)?$/) {
+            print "ERROR: Invalid PV_Output value on line " NR
+            exit 1
+          }
+        }' data/energy_data.csv
+
+          echo "PV_Output validation successful."
+
+    - name: Display validated data
+      run: |
+        cat data/energy_data.csv
