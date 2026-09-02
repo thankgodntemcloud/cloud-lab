@@ -120,3 +120,38 @@ jobs:
          - name: Display validated weather data
            run: |
              cat data/energy_data.csv
+
+
+     calculate-performance:
+       runs-on: ubuntu-latest
+
+       needs: [validate-pv-data, validate-weather-data]
+
+       steps:
+         - name: Checkout repository
+           uses: actions/checkout@v4
+
+         - name: Download energy data
+           uses: actions/download-artifact@v4
+           with:
+             name: energy-data
+             path: data
+
+         - name: Calculate PV performance
+           run: |
+             echo "Calculating PV performance..."
+
+             awk -F',' 'NR == 1 {
+               print "Date,PV_Performance"
+               next
+             }
+             {
+               performance = $3 / $2
+               printf "%s,%.3f\n", $1, performance
+             }' data/energy_data.csv > data/performance.csv
+
+             echo "PV performance calculation completed."
+
+         - name: Display performance results
+           run: |
+             cat data/performance.csv        
