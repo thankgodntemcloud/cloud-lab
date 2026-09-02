@@ -199,3 +199,60 @@ jobs:
          - name: Display anomaly results
            run: |
              cat data/anomalies.csv
+
+         - name: Upload anomaly data
+           uses: actions/upload-artifact@v4
+           with:
+             name: anomaly-data
+             path: data/anomalies.csv
+
+
+     generate-report:
+       runs-on: ubuntu-latest
+
+       needs: detect-anomalies
+
+       steps:
+         - name: Checkout repository
+           uses: actions/checkout@v4
+
+         - name: Download anomaly data
+           uses: actions/download-artifact@v4
+           with:
+             name: anomaly-data
+             path: data
+
+         - name: Generate energy report
+           run: |
+             echo "Generating energy analysis report..."
+
+             echo "SOLAR PV ENERGY ANALYSIS REPORT" > data/energy_report.txt
+             echo "================================" >> data/energy_report.txt
+             echo "" >> data/energy_report.txt
+
+             echo "PV Performance Results" >> data/energy_report.txt
+             echo "-----------------------" >> data/energy_report.txt
+
+             tail -n +2 data/anomalies.csv >> data/energy_report.txt
+
+             echo "" >> data/energy_report.txt
+             echo "Summary" >> data/energy_report.txt
+             echo "-------" >> data/energy_report.txt
+
+             normal_count=$(awk -F',' 'NR > 1 && $3 == "NORMAL" {count++} END {print count+0}' data/anomalies.csv)
+             anomaly_count=$(awk -F',' 'NR > 1 && $3 == "ANOMALY" {count++} END {print count+0}' data/anomalies.csv)
+
+             echo "Normal Records: $normal_count" >> data/energy_report.txt
+             echo "Anomalies Detected: $anomaly_count" >> data/energy_report.txt
+
+             echo "Energy report generated successfully."
+
+         - name: Display energy report
+           run: |
+             cat data/energy_report.txt
+
+         - name: Upload energy report
+           uses: actions/upload-artifact@v4
+           with:
+             name: energy-report
+             path: data/energy_report.txt
